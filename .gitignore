@@ -1,0 +1,23 @@
+# Compiler products and local development folders
+*.o
+*.obj
+*.pdb
+*.ilk
+*.lib
+*.dll.a
+.build/
+.vs/
+.vscode/
+zig-cache/
+.zig-cache/
+zig-out/
+work/
+source/test_host.exe
+installer/installer-test.exe
+*.installing
+
+# Local credentials/configuration should never be part of this project
+.env
+.env.*
+hosts.yml
+auth-gitconfig

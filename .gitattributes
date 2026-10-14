@@ -1,0 +1,14 @@
+* text=auto
+*.c text eol=lf
+*.h text eol=lf
+*.md text eol=lf
+*.ps1 text eol=lf
+*.rc text eol=lf
+*.manifest text eol=lf
+*.txt text eol=lf
+.gitignore text eol=lf
+.gitattributes text eol=lf
+*.exe binary
+*.clap binary
+*.wav binary
+*.png binary
