@@ -39,3 +39,6 @@ The ORBIT button currently draws a fixed circle (radius 0.5 on the map, `preset(
 ## Left to the builder
 - Parameter enum/definitions, slider layout in the panel (right panel may need slight re-spacing for a 9th slider), UI mouse hit-testing, state save/load of the new value and flag.
 - Build with `build.ps1` (LLVM-MinGW) and re-run `test_host.c` plus CLAP Validator; update README-AR.md and SHA256SUMS.
+
+## Addendum 2026-10-26: ORBIT DIRECTION (0.3.0)
+Stepped, automatable parameter `ORBIT_DIR` (0 clockwise = previous behaviour, 1 counter-clockwise) with two buttons under the sliders. It mirrors the orbit angle, applies live while the orbit is on, and leaves drawn paths alone. Saved-state version bumped to 3, so 0.2.0 projects do not load.

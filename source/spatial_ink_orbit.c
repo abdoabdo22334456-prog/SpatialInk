@@ -1,4 +1,4 @@
-/* Spatial Ink Orbit 0.2.0 - Windows x64 CLAP spatial drawing effect (adds the ORBIT SIZE slider).
+/* Spatial Ink Orbit 0.3.0 - Windows x64 CLAP spatial drawing effect (adds the ORBIT SIZE slider).
    Copyright (c) 2026. MIT license. See LICENSE.txt.
    Analytic binaural approximation: ITD, ILD, head shadow and diffuse room.
    No measured/personalized HRTF dataset. No allocations or locks in process(). */
@@ -22,7 +22,7 @@ _Static_assert(ATOMIC_INT_LOCK_FREE==2,"Realtime path and parameter atomics must
 #define QUEUE 1024
 #define WIDTH 1040
 #define HEIGHT 730
-enum { REACH, ROOM, AMBIENCE, BARS, PHASE, HEIGHT_P, MIX, OUTPUT, MOTION, BYPASS, ORBIT_SIZE, NPARAM };
+enum { REACH, ROOM, AMBIENCE, BARS, PHASE, HEIGHT_P, MIX, OUTPUT, MOTION, BYPASS, ORBIT_SIZE, ORBIT_DIR, NPARAM };
 #define ORBIT_POINTS 128
 #define NSLIDERS 9
 static const int slider_ids[NSLIDERS]={REACH,ORBIT_SIZE,ROOM,AMBIENCE,BARS,PHASE,HEIGHT_P,MIX,OUTPUT};
@@ -33,7 +33,7 @@ static const Param definitions[NPARAM]={
  {"Path position",0,1,0,false}, {"Height (degrees)",-90,90,0,false},
  {"Mix",0,1,1,false}, {"Output (dB)",-24,6,-3,false},
  {"Follow transport",0,1,1,true}, {"Bypass",0,1,0,true},
- {"Orbit size",.05,.95,.5,false}
+ {"Orbit size",.05,.95,.5,false}, {"Orbit direction",0,1,0,true}
 };
 typedef struct {float x,y;} Point;
 typedef struct {uint16_t type,id; uint32_t generation; double value;} UiEvent;
@@ -89,12 +89,13 @@ static void store_path(Plugin*p,const Point*pts,uint32_t count){
 }
 /* Any path edit other than the ORBIT button turns the live orbit off. */
 static void publish_path(Plugin*p,const Point*pts,uint32_t count){atomic_store(&p->orbit,0);store_path(p,pts,count);if(p->host_state)p->host_state->mark_dirty(p->host);}
-static void orbit_points(double radius,Point*pts){
- for(uint32_t i=0;i<ORBIT_POINTS;i++){double a=2*PI*i/(ORBIT_POINTS-1);pts[i]=(Point){(float)(radius*sin(a)),(float)(-radius*cos(a))};}
+/* Starts in front of the listener; counter-clockwise (seen from above) mirrors the angle. */
+static void orbit_points(double radius,bool counter_clockwise,Point*pts){
+ for(uint32_t i=0;i<ORBIT_POINTS;i++){double a=2*PI*i/(ORBIT_POINTS-1);if(counter_clockwise)a=-a;pts[i]=(Point){(float)(radius*sin(a)),(float)(-radius*cos(a))};}
 }
 /* The live path: a circle of the current ORBIT SIZE while the orbit is on, else the stored path. */
 static uint32_t current_path(Plugin*p,Point*pts){
- if(atomic_load(&p->orbit)){orbit_points(value(p,ORBIT_SIZE),pts);return ORBIT_POINTS;}
+ if(atomic_load(&p->orbit)){orbit_points(value(p,ORBIT_SIZE),value(p,ORBIT_DIR)>=.5,pts);return ORBIT_POINTS;}
  uint32_t n=atomic_load(&p->count);if(n>POINTS)n=POINTS;
  for(uint32_t i=0;i<n;i++)pts[i]=unpack_point(atomic_load(&p->path[i]));
  return n;
@@ -151,7 +152,7 @@ static void receive_event(Plugin*p,const clap_event_header_t*e){
 }
 static void preset(Plugin*p,int which,bool inform){
  Point pts[POINTS];uint32_t n=128;
- if(which==0){n=ORBIT_POINTS;orbit_points(value(p,ORBIT_SIZE),pts);}
+ if(which==0){n=ORBIT_POINTS;orbit_points(value(p,ORBIT_SIZE),value(p,ORBIT_DIR)>=.5,pts);}
  else if(which==1){for(uint32_t i=0;i<n;i++){double t=(double)i/(n-1);double r=.94*(1-t)+.045*t;double a=PI*(1-t)+PI*.5*t;pts[i]=(Point){(float)(r*sin(a)),(float)(-r*cos(a))};}}
  else{n=1;pts[0]=(Point){-.10f,-.025f};}
  publish_path(p,pts,n);
@@ -173,7 +174,7 @@ static double read_delay(Delay*d,double samples){
 /* Audio-side copy of the path: while the orbit is on, rebuild the circle from ORBIT SIZE (no shared writes). */
 static void apply_orbit(Plugin*p){
  if(!atomic_load(&p->orbit))return;
- orbit_points(value(p,ORBIT_SIZE),p->cached);p->cached_count=ORBIT_POINTS;
+ orbit_points(value(p,ORBIT_SIZE),value(p,ORBIT_DIR)>=.5,p->cached);p->cached_count=ORBIT_POINTS;
 }
 static void clear_dsp(Plugin*p){
  if(p->direct.data)memset(p->direct.data,0,p->direct.size*sizeof(float));p->direct.pos=0;
@@ -297,9 +298,9 @@ static clap_process_status CLAP_ABI process(const clap_plugin_t*c,const clap_pro
     if((tr->flags&CLAP_TRANSPORT_HAS_TIME_SIGNATURE)&&tr->tsig_denom&&tr->tsig_num)barbeats=tr->tsig_num*4.0/tr->tsig_denom;
    }
    ei++;event=ei<ec?pr->in_events->get(pr->in_events,ei):NULL;
-   double old_orbit=targets[ORBIT_SIZE];
+   double old_orbit=targets[ORBIT_SIZE],old_dir=targets[ORBIT_DIR];
    for(int k=0;k<NPARAM;k++)targets[k]=value(p,k);
-   if(targets[ORBIT_SIZE]!=old_orbit)apply_orbit(p);
+   if(targets[ORBIT_SIZE]!=old_orbit||targets[ORBIT_DIR]!=old_dir)apply_orbit(p);
   }
   for(int k=0;k<NPARAM;k++){double a=(k==ROOM?room_coeff:smooth_coeff);if(definitions[k].stepped)p->smooth[k]=targets[k];else p->smooth[k]+=a*(targets[k]-p->smooth[k]);}
   double phase=p->smooth[PHASE];
@@ -335,13 +336,14 @@ static bool CLAP_ABI params_value(const clap_plugin_t*c,clap_id id,double*out){i
 static bool CLAP_ABI params_text(const clap_plugin_t*c,clap_id id,double v,char*b,uint32_t n){
  (void)c;if(id>=NPARAM||!b||!n)return false;
  if(id==REACH)snprintf(b,n,"%.1f m",v);else if(id==BARS)snprintf(b,n,"%.0f bars",v);else if(id==HEIGHT_P)snprintf(b,n,"%+.0f deg",v);
- else if(id==OUTPUT)snprintf(b,n,"%+.1f dB",v);else if(id==MOTION)snprintf(b,n,"%s",v>=.5?"Follow":"Manual");
+ else if(id==OUTPUT)snprintf(b,n,"%+.1f dB",v);else if(id==MOTION)snprintf(b,n,"%s",v>=.5?"Follow":"Manual");else if(id==ORBIT_DIR)snprintf(b,n,"%s",v>=.5?"Counter-clockwise":"Clockwise");
  else if(id==BYPASS)snprintf(b,n,"%s",v>=.5?"Bypass":"Active");else snprintf(b,n,"%.0f %%",v*100);return true;
 }
 static bool CLAP_ABI params_parse(const clap_plugin_t*c,clap_id id,const char*b,double*v){
  (void)c;if(id>=NPARAM||!b||!v)return false;char*end;double d=strtod(b,&end);
  if(end==b){if(id==MOTION){if(!_stricmp(b,"Follow"))d=1;else if(!_stricmp(b,"Manual"))d=0;else return false;}
- else if(id==BYPASS){if(!_stricmp(b,"Bypass"))d=1;else if(!_stricmp(b,"Active"))d=0;else return false;}else return false;}
+ else if(id==BYPASS){if(!_stricmp(b,"Bypass"))d=1;else if(!_stricmp(b,"Active"))d=0;else return false;}
+ else if(id==ORBIT_DIR){if(!_stricmp(b,"Counter-clockwise"))d=1;else if(!_stricmp(b,"Clockwise"))d=0;else return false;}else return false;}
  else if(strchr(end,'%')&&(id==ROOM||id==AMBIENCE||id==PHASE||id==MIX||id==ORBIT_SIZE))d/=100;
  if(!isfinite(d))return false;*v=clampd(d,definitions[id].min,definitions[id].max);return true;
 }
@@ -354,14 +356,14 @@ typedef struct {uint32_t magic,version,count,reserved;float params[NPARAM];uint3
 static bool write_all(const clap_ostream_t*s,const void*data,uint64_t n){const char*p=data;while(n){int64_t k=s->write(s,p,n);if(k<=0||(uint64_t)k>n)return false;p+=k;n-=k;}return true;}
 static bool read_all(const clap_istream_t*s,void*data,uint64_t n){char*p=data;while(n){int64_t k=s->read(s,p,n);if(k<=0||(uint64_t)k>n)return false;p+=k;n-=k;}return true;}
 static bool CLAP_ABI state_save(const clap_plugin_t*c,const clap_ostream_t*s){
- Plugin*p=c->plugin_data;State st={0};st.magic=0x4f4e4953;st.version=2;
+ Plugin*p=c->plugin_data;State st={0};st.magic=0x4f4e4953;st.version=3;
  Point live[POINTS];st.count=current_path(p,live);st.reserved=atomic_load(&p->orbit)?1:0;
  for(int k=0;k<NPARAM;k++)st.params[k]=(float)value(p,k);for(uint32_t i=0;i<st.count;i++)st.pts[i]=pack_point(live[i]);
  return write_all(s,&st,sizeof(st));
 }
 static bool CLAP_ABI state_load(const clap_plugin_t*c,const clap_istream_t*s){
  Plugin*p=c->plugin_data;State st;
- if(!read_all(s,&st,sizeof(st))||st.magic!=0x4f4e4953||st.version!=2||st.reserved>1||!st.count||st.count>POINTS)return false;
+ if(!read_all(s,&st,sizeof(st))||st.magic!=0x4f4e4953||st.version!=3||st.reserved>1||!st.count||st.count>POINTS)return false;
  for(int k=0;k<NPARAM;k++)if(!isfinite(st.params[k])||st.params[k]<definitions[k].min||st.params[k]>definitions[k].max)return false;
  Point pts[POINTS];for(uint32_t i=0;i<st.count;i++)pts[i]=unpack_point(st.pts[i]);
  /* Validate the complete state before replacing anything. */
@@ -389,7 +391,7 @@ static int slider_y(int slot){return 143+slot*50;}
 static void draw_gui(Plugin*p,HDC dc){
  rect_fill(dc,0,0,WIDTH,HEIGHT,bg);
  label(dc,p->title,28,22,"SPATIAL INK ORBIT",text);label(dc,p->small,29,60,"DRAW THE SPACE. HEAR THE DISTANCE.",muted);
- label(dc,p->small,751,29,"HEADPHONE SPATIAL EFFECT",mint);label(dc,p->small,751,53,"WINDOWS 64 / CLAP / 0.2",muted);
+ label(dc,p->small,751,29,"HEADPHONE SPATIAL EFFECT",mint);label(dc,p->small,751,53,"WINDOWS 64 / CLAP / 0.3",muted);
  button(dc,p,28,92,85,"DRAW",!p->place_mode);button(dc,p,121,92,85,"PLACE",p->place_mode);
  button(dc,p,224,92,65,"UNDO",false);button(dc,p,305,92,86,"ORBIT",false);button(dc,p,399,92,130,"FAR > EAR",false);button(dc,p,537,92,91,"WHISPER",false);button(dc,p,636,92,70,"CLEAR",false);
  rect_fill(dc,28,139,678,475,panel);
@@ -422,6 +424,8 @@ static void draw_gui(Plugin*p,HDC dc){
   rect_fill(dc,751,y,240,4,line);double t=normalized(p,k);rect_fill(dc,751,y,(int)(240*t),4,k==PHASE?orange:mint);
   ellipse(dc,751+(int)(240*t)-5,y-3,10,10,text,text,1);
  }
+ label(dc,p->small,751,556,"ORBIT DIRECTION",muted);
+ button(dc,p,751,578,118,"CLOCKWISE",value(p,ORBIT_DIR)<.5);button(dc,p,877,578,114,"COUNTER-CW",value(p,ORBIT_DIR)>=.5);
  button(dc,p,28,631,154,"FOLLOW TRANSPORT",value(p,MOTION)>.5);button(dc,p,190,631,131,"MANUAL / SCRUB",value(p,MOTION)<.5);
  button(dc,p,888,631,124,value(p,BYPASS)>.5?"BYPASSED":"ACTIVE",value(p,BYPASS)<.5);
  rect_fill(dc,340,642,518,5,line);rect_fill(dc,340,642,(int)(518*clampd(phase,0,1)),5,orange);
@@ -477,6 +481,7 @@ static LRESULT CALLBACK window_proc(HWND hwnd,UINT msg,WPARAM wp,LPARAM lp){
    refresh(p);return 0;
   }
   if(y>=631&&y<=663){if(x>=28&&x<=182)ui_triplet(p,MOTION,1);else if(x>=190&&x<=321)ui_triplet(p,MOTION,0);else if(x>=888&&x<=1012)ui_triplet(p,BYPASS,value(p,BYPASS)<.5?1:0);refresh(p);return 0;}
+  if(y>=578&&y<=610&&x>=751&&x<=991){if(x<=869)ui_triplet(p,ORBIT_DIR,0);else if(x>=877)ui_triplet(p,ORBIT_DIR,1);refresh(p);return 0;}
   if(x>=741&&x<=1003)for(int slot=0;slot<NSLIDERS;slot++)if(abs(y-slider_y(slot))<=14){
    int k=slider_ids[slot];if(k==PHASE)ui_triplet(p,MOTION,0);p->drag_param=k;ui_queue(p,CLAP_EVENT_PARAM_GESTURE_BEGIN,k,0);slider_update(p,k,x);SetCapture(hwnd);return 0;
   }
@@ -541,7 +546,7 @@ static const void*CLAP_ABI extension(const clap_plugin_t*c,const char*id){
 }
 static void CLAP_ABI main_thread(const clap_plugin_t*c){refresh(c->plugin_data);}
 static const char*const features[]={CLAP_PLUGIN_FEATURE_AUDIO_EFFECT,CLAP_PLUGIN_FEATURE_MULTI_EFFECTS,CLAP_PLUGIN_FEATURE_REVERB,CLAP_PLUGIN_FEATURE_STEREO,NULL};
-static const clap_plugin_descriptor_t descriptor={CLAP_VERSION_INIT,"local.spatialink.orbit","Spatial Ink Orbit","Spatial Ink","","","","0.2.0","Draw motion from vast spaces to a close headphone source.",features};
+static const clap_plugin_descriptor_t descriptor={CLAP_VERSION_INIT,"local.spatialink.orbit","Spatial Ink Orbit","Spatial Ink","","","","0.3.0","Draw motion from vast spaces to a close headphone source.",features};
 static uint32_t CLAP_ABI factory_count(const clap_plugin_factory_t*f){(void)f;return 1;}
 static const clap_plugin_descriptor_t*CLAP_ABI factory_desc(const clap_plugin_factory_t*f,uint32_t index){(void)f;return index?NULL:&descriptor;}
 static const clap_plugin_t*CLAP_ABI factory_create(const clap_plugin_factory_t*f,const clap_host_t*host,const char*id){

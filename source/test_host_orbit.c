@@ -71,7 +71,7 @@ int main(int argc,char**argv){
  const clap_plugin_factory_t*factory=entry->get_factory(CLAP_PLUGIN_FACTORY_ID);CHECK(factory&&factory->get_plugin_count(factory)==1,"factory count");
  const clap_plugin_descriptor_t*d=factory->get_plugin_descriptor(factory,0);CHECK(d&&clap_version_is_compatible(d->clap_version),"descriptor compatible");CHECK(!factory->get_plugin_descriptor(factory,1),"invalid descriptor index");
  const clap_plugin_t*p=factory->create_plugin(factory,&host,d->id);CHECK(p&&p->init(p),"create/init");
- const clap_plugin_params_t*pa=p->get_extension(p,CLAP_EXT_PARAMS);CHECK(pa&&pa->count(p)==11,"ten host automation parameters");
+ const clap_plugin_params_t*pa=p->get_extension(p,CLAP_EXT_PARAMS);CHECK(pa&&pa->count(p)==12,"twelve host automation parameters");
  const clap_plugin_audio_ports_t*ap=p->get_extension(p,CLAP_EXT_AUDIO_PORTS);clap_audio_port_info_t port;CHECK(ap&&ap->get(p,0,true,&port)&&port.channel_count==2,"stereo input");CHECK(ap->get(p,0,false,&port)&&port.in_place_pair==0,"stereo in-place output");
  for(uint32_t i=0;i<10;i++){clap_param_info_t info;CHECK(pa->get_info(p,i,&info),"parameter info");double v;CHECK(pa->get_value(p,i,&v)&&v>=info.min_value&&v<=info.max_value,"parameter defaults");}
  CHECK(!p->activate(p,100,1,N),"unsupported sample rate rejected");
@@ -165,13 +165,24 @@ int main(int argc,char**argv){
   shutdown(p);double orbit_db=10*log10(near_e/far_e);CHECK(orbit_db>10,"widening ORBIT SIZE live moves the source away (quieter by >10 dB)");
   print_gui(ui,"work/spatial-ink/orbit-90.bmp");
   /* State: orbit flag and size round-trip, and the saved circle has the slider radius. */
-  Memory orb=save(p);const uint32_t*pts=(const uint32_t*)(orb.data+16+4*11);int ry=(int16_t)(pts[0]>>16);CHECK(orb.data[12]==1&&abs(ry+(int)lround(.9*32767))<=2,"saved orbit points use the ORBIT SIZE radius");
+  Memory orb=save(p);const uint32_t*pts=(const uint32_t*)(orb.data+16+4*12);int ry=(int16_t)(pts[0]>>16);CHECK(orb.data[12]==1&&abs(ry+(int)lround(.9*32767))<=2,"saved orbit points use the ORBIT SIZE radius");
   const clap_plugin_t*p3=factory->create_plugin(factory,&host,d->id);CHECK(p3&&p3->init(p3)&&load(p3,&orb),"orbit state load");Memory orb2=save(p3);CHECK(orb.size==orb2.size&&!memcmp(orb.data,orb2.data,orb.size),"orbit state byte-identical roundtrip");p3->destroy(p3);
+  /* Direction: clockwise by default (a quarter of the way round is on the right), COUNTER-CW mirrors it live. */
+  CHECK(pa->get_value(p,11,&v)&&v==0,"ORBIT DIRECTION defaults to clockwise");
+  CHECK((int16_t)pts[32]>0,"clockwise orbit passes through the right side first");
+  setp(p,4,.25);double lr[2][2]={{0}};
+  for(int dir=0;dir<2;dir++){
+   click(ui,dir?930:810,594);CHECK(pa->get_value(p,11,&v)&&v==(double)dir,"direction buttons set ORBIT DIRECTION");
+   startup(p,48000);for(int b=0;b<30;b++){for(int i=0;i<N;i++)left[i]=right[i]=(float)noise();block(p,N,0,false);if(b>12)for(int i=0;i<N;i++){lr[dir][0]+=ol[i]*ol[i];lr[dir][1]+=orr[i]*orr[i];}}shutdown(p);
+  }
+  CHECK(lr[0][1]>lr[0][0]*2&&lr[1][0]>lr[1][1]*2,"quarter-way source is right for clockwise and left for counter-clockwise");
+  Memory ccw=save(p);const uint32_t*cpts=(const uint32_t*)(ccw.data+16+4*12);CHECK(ccw.data[12]==1&&(int16_t)cpts[32]<0,"saved counter-clockwise orbit passes through the left side first");
+  click(ui,930,594);print_gui(ui,"work/spatial-ink/orbit-ccw.bmp");click(ui,810,594);setp(p,4,0);
   /* A hand-drawn path is not an orbit: the slider must not change it. */
   click(ui,66,106);SendMessageW(ui,WM_LBUTTONDOWN,MK_LBUTTON,MAKELPARAM(367,181));for(int i=1;i<=40;i++)SendMessageW(ui,WM_MOUSEMOVE,MK_LBUTTON,MAKELPARAM(367+(int)(100*sin(i*.1)),181+i*5));SendMessageW(ui,WM_LBUTTONUP,0,MAKELPARAM(300,380));
   Memory drawn=save(p);CHECK(drawn.data[12]==0,"drawing a path turns the orbit off");setp(p,10,.3);Memory drawn2=save(p);
-  CHECK(!memcmp(drawn.data+16+4*11,drawn2.data+16+4*11,sizeof(uint32_t)*POINTS_IN_STATE),"slider leaves a hand-drawn path untouched");
-  printf("PASS ORBIT SIZE slider, live widening %.1f dB, state roundtrip, drawn paths unaffected\n",orbit_db);
+  CHECK(!memcmp(drawn.data+16+4*12,drawn2.data+16+4*12,sizeof(uint32_t)*POINTS_IN_STATE),"slider leaves a hand-drawn path untouched");
+  printf("PASS ORBIT SIZE slider + direction, live widening %.1f dB, state roundtrip, drawn paths unaffected\n",orbit_db);
  }
  p2->destroy(p2);g->destroy(p);CHECK(g->create(p,CLAP_WINDOW_API_WIN32,true),"floating GUI create after embedded destroy");g->destroy(p);p->destroy(p);DestroyWindow(parent);entry->deinit();entry->deinit();FreeLibrary(dll);
  printf("ALL TESTS PASSED; outgoing host events: %d\n",out_count);return 0;
