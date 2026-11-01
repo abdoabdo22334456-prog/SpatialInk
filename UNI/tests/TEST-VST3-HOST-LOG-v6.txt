@@ -1,0 +1,23 @@
+VST3 class: UNI
+VST3 requested timing flags: 0x4DC
+PASS explicit VST3 tempo/music-position/meter/transport requirements
+	AUDIO in: 1, out: 1
+	AUDIO in: 1, out: 1
+	AUDIO in: 1, out: 1
+PASS previous VST3 v5/v6 state migration, original Single/Double Orbit audio, preserved parameters/path/CID and truncated-state rejection
+	AUDIO in: 1, out: 1
+	AUDIO in: 1, out: 1
+PASS factory, component/controller, stereo buses and all 39 automatable parameter ranges
+PASS silent/no-audio zero-sample parameter flush for all 39 parameters
+PASS actual VST3 normalized min/max playback for all 39 parameters and sample-128 audio equivalence
+PASS exact bypass, audible XY direction and VST3 component/controller state recall
+PASS HOST SYNC 60/90/120/180 BPM, custom BPM, speed, meter, missing/bar-only contexts, stop/seek/loop and continuous speed edits
+PASS forward/reverse direction for both DRAW paths and ORBIT
+Double marker x: A=472 B=267, B after automation=361
+PASS two orbit markers, independent A/B VST3 automation and host-clock movement
+PASS duplicated audio follows both independently automated spatial positions
+PASS two independent audio engines, Page B spatial automation, both outputs and per-page bypass
+PASS Page A host sync and Page B custom BPM run independently
+PASS separate page paths and byte-identical two-page save/restore
+PASS native VST3 GUI embedding, all 39 GUI automation gestures, typed BPM, speed buttons, mode activation and XY capture cleanup
+ALL VST3 INTEGRATION TESTS PASSED

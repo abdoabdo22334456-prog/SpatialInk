@@ -1,5 +1,19 @@
 # Spatial Ink
 
+## Latest: UNI 0.8.0 for Windows VST3
+
+**UNI** is the current VST3 version of this spatial audio effect. It includes the original Single mode, optional Double Orbit, and **Two Pages**: two independent processing pages inside one plugin, each with its own position, path, orbit, room, timing and automation. Both pages process the same input and are heard together.
+
+- [Download the UNI 0.8.0 Windows installer](UNI/UNI-VST3-Setup.exe)
+- [UNI 0.8.0 Arabic guide](UNI/README-AR.md)
+- [Source, build instructions and test report](UNI/)
+
+Close your DAW before installing, then rescan VST3 plugins. The legacy CLAP releases described below remain available.
+
+![UNI Two Pages interface](UNI/Interface-VST3-TwoPages.png)
+
+## Legacy Spatial Ink CLAP
+
 Windows x64 CLAP audio effect with a drawing interface for moving a headphone sound source from distant spaces to close to an ear.
 
 **[الدليل الكامل بالعربي](README-AR.md)**

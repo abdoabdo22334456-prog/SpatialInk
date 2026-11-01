@@ -1,0 +1,327 @@
+* Loading module...
+
+	.\UNI.vst3
+
+* Check valid bundle structure...
+
+* Scanning classes...
+
+  Factory Info:
+	vendor = UNI
+	url = 
+	email = info@
+
+  Class Info 0:
+	name = UNI
+	category = Audio Module Class
+	subCategories = Fx|Tools|Reverb
+	version = 0.8.0
+	sdkVersion = VST 3.8.1
+	cid = 391101EDF1895D0B9F4EFB97F715D380
+
+* Checking snapshots...
+
+Info: No snapshots in Bundle.
+
+* Creating tests...
+
+* Running tests...
+
+-------------------------------------------------------------
+TestSuite : UNI
+-------------------------------------------------------------
+
+-------------------------------------------------------------
+TestSuite : General Tests
+-------------------------------------------------------------
+
+[Scan Editor Classes]
+Info:  ===Scan Editor Classes ====================================
+Info:  Processor and edit controller united.
+[Succeeded]
+
+[Scan Buses]
+Info:  ===Scan Buses ====================================
+Info:  => Audio Buses: [1 In(s) => 1 Out(s)]
+Info:       In [0]: "Source (stereo downmix)" (Main-Default Active) 
+Info:       Out[0]: "Headphone stereo" (Main-Default Active) 
+Info:  => Event Buses: [0 In(s) => 0 Out(s)]
+[Succeeded]
+
+[Scan Parameters]
+Info:  ===Scan Parameters ====================================
+Info:  This component exports 39 parameter(s)
+	AUDIO in: 1, out: 1
+Info:     Parameter 000 (id=0): [title="Maximum distance"] [unit=""] [type = Float, default = 0.292929, unit = 1]
+Info:     Parameter 001 (id=1): [title="Room size"] [unit=""] [type = Float, default = 0.550000, unit = 1]
+Info:     Parameter 002 (id=2): [title="Ambience"] [unit=""] [type = Float, default = 0.380000, unit = 1]
+Info:     Parameter 003 (id=3): [title="Cycle length (bars)"] [unit=""] [type = Discrete, default = 0.200000, unit = 1]
+Info:     Parameter 004 (id=4): [title="Path position"] [unit=""] [type = Float, default = 0.000000, unit = 1]
+Info:     Parameter 005 (id=5): [title="Height (degrees)"] [unit=""] [type = Float, default = 0.500000, unit = 1]
+Info:     Parameter 006 (id=6): [title="Mix"] [unit=""] [type = Float, default = 1.000000, unit = 1]
+Info:     Parameter 007 (id=7): [title="Output (dB)"] [unit=""] [type = Float, default = 0.700000, unit = 1]
+Info:     Parameter 008 (id=8): [title="Follow transport"] [unit=""] [type = Toggle, default = 1.000000, unit = 1]
+Info:     Parameter 009 (id=9): [title="Bypass"] [unit=""] [type = Toggle, default = 0.000000, unit = 1]
+Info:     Parameter 010 (id=10): [title="Orbit size"] [unit=""] [type = Float, default = 0.500000, unit = 1]
+Info:     Parameter 011 (id=11): [title="Direction"] [unit=""] [type = Toggle, default = 0.000000, unit = 1]
+Info:     Parameter 012 (id=12): [title="Source X (left-right)"] [unit=""] [type = Float, default = 0.500000, unit = 1]
+Info:     Parameter 013 (id=13): [title="Source Y (front-back)"] [unit=""] [type = Float, default = 0.250000, unit = 1]
+Info:     Parameter 014 (id=14): [title="Position mode"] [unit=""] [type = Toggle, default = 0.000000, unit = 1]
+Info:     Parameter 015 (id=15): [title="Tempo source"] [unit=""] [type = Toggle, default = 0.000000, unit = 1]
+Info:     Parameter 016 (id=16): [title="Custom tempo (BPM)"] [unit=""] [type = Float, default = 0.102145, unit = 1]
+Info:     Parameter 017 (id=17): [title="Speed multiplier"] [unit=""] [type = Float, default = 0.058824, unit = 1]
+Info:     Parameter 018 (id=18): [title="Double"] [unit=""] [type = Toggle, default = 0.000000, unit = 1]
+Info:     Parameter 019 (id=19): [title="Point B position"] [unit=""] [type = Float, default = 0.500000, unit = 1]
+Info:     Parameter 020 (id=20): [title="Two pages"] [unit=""] [type = Toggle, default = 0.000000, unit = 1]
+Info:     Parameter 021 (id=21): [title="Page B: Maximum distance"] [unit=""] [type = Float, default = 0.292929, unit = 1]
+Info:     Parameter 022 (id=22): [title="Page B: Room size"] [unit=""] [type = Float, default = 0.550000, unit = 1]
+Info:     Parameter 023 (id=23): [title="Page B: Ambience"] [unit=""] [type = Float, default = 0.380000, unit = 1]
+Info:     Parameter 024 (id=24): [title="Page B: Cycle length (bars)"] [unit=""] [type = Discrete, default = 0.200000, unit = 1]
+Info:     Parameter 025 (id=25): [title="Page B: Path position"] [unit=""] [type = Float, default = 0.500000, unit = 1]
+Info:     Parameter 026 (id=26): [title="Page B: Height (degrees)"] [unit=""] [type = Float, default = 0.500000, unit = 1]
+Info:     Parameter 027 (id=27): [title="Page B: Mix"] [unit=""] [type = Float, default = 1.000000, unit = 1]
+Info:     Parameter 028 (id=28): [title="Page B: Output (dB)"] [unit=""] [type = Float, default = 0.700000, unit = 1]
+Info:     Parameter 029 (id=29): [title="Page B: Follow transport"] [unit=""] [type = Toggle, default = 1.000000, unit = 1]
+Info:     Parameter 030 (id=30): [title="Page B: Bypass"] [unit=""] [type = Toggle, default = 0.000000, unit = 1]
+Info:     Parameter 031 (id=31): [title="Page B: Orbit size"] [unit=""] [type = Float, default = 0.500000, unit = 1]
+Info:     Parameter 032 (id=32): [title="Page B: Direction"] [unit=""] [type = Toggle, default = 0.000000, unit = 1]
+Info:     Parameter 033 (id=33): [title="Page B: Source X (left-right)"] [unit=""] [type = Float, default = 0.500000, unit = 1]
+Info:     Parameter 034 (id=34): [title="Page B: Source Y (front-back)"] [unit=""] [type = Float, default = 0.250000, unit = 1]
+Info:     Parameter 035 (id=35): [title="Page B: Position mode"] [unit=""] [type = Toggle, default = 0.000000, unit = 1]
+Info:     Parameter 036 (id=36): [title="Page B: Tempo source"] [unit=""] [type = Toggle, default = 0.000000, unit = 1]
+Info:     Parameter 037 (id=37): [title="Page B: Custom tempo (BPM)"] [unit=""] [type = Float, default = 0.102145, unit = 1]
+Info:     Parameter 038 (id=38): [title="Page B: Speed multiplier"] [unit=""] [type = Float, default = 0.058824, unit = 1]
+[Succeeded]
+
+[MIDI Mapping]
+Info:  ===MIDI Mapping ====================================
+Info:  No MIDI Mapping interface supplied!
+[Succeeded]
+
+[MIDI Learn]
+Info:  ===MIDI Learn ====================================
+Info:  No MIDI Learn interface supplied!
+[Succeeded]
+
+[Scan Units]
+Info:  ===Scan Units ====================================
+Info:  This component has 2 unit(s).
+Info:     Unit000 (ID = 0): "Root" (parent ID = -1, programlist ID = -1)
+Info:     Unit001 (ID = 1): "UNI" (parent ID = 0, programlist ID = -1)
+[Succeeded]
+
+[Scan Programs]
+Info:  ===Scan Programs ====================================
+Info:  This component does not export any programs.
+[Succeeded]
+
+[Terminate/Initialize]
+Info:  ===Terminate/Initialize ====================================
+	AUDIO in: 1, out: 1
+[Succeeded]
+
+[Check Unit Structure]
+Info:  ===Check Unit Structure ====================================
+Info:  All units have valid parent IDs.
+[Succeeded]
+
+[Valid State Transition 32bits]
+Info:  ===Valid State Transition 32bits ====================================
+	AUDIO in: 1, out: 1
+	AUDIO in: 1, out: 1
+	AUDIO in: 1, out: 1
+	AUDIO in: 1, out: 1
+[Succeeded]
+
+[Valid State Transition 64bits]
+Info:  ===Valid State Transition 64bits ====================================
+Info:  64bit Audio Processing not supported.
+[Succeeded]
+
+[Bus Consistency]
+Info:  ===Bus Consistency ====================================
+[Succeeded]
+
+[Bus Activation]
+Info:  ===Bus Activation ====================================
+Info:     Bus Activation: Input Audio Bus (0) (kMain)
+Info:     Bus Activation: Output Audio Bus (0) (kMain)
+[Succeeded]
+
+[Check Audio Bus Arrangement]
+Info:  ===Check Audio Bus Arrangement ====================================
+Info:     Check Input Audio Bus Arrangement (0)
+Info:     Check Output Audio Bus Arrangement (0)
+[Succeeded]
+
+[SideChain Arrangement]
+Info:  ===SideChain Arrangement ====================================
+[Succeeded]
+
+[Suspend/Resume]
+Info:  ===Suspend/Resume ====================================
+[Succeeded]
+
+[Note Expression]
+Info:  ===Note Expression ====================================
+Info:  No Note Expression PhysicalUIMapping interface supplied!
+[Succeeded]
+
+[Keyswitch]
+Info:  ===Keyswitch ====================================
+Info:  No Keyswitch interface supplied!
+[Succeeded]
+
+[ProcessContext Requirements]
+Info:  ===ProcessContext Requirements ====================================
+Info:  ProcessContextRequirements:
+Info:   - ProjectTimeMusic
+Info:   - BarPosititionMusic
+Info:   - CycleMusic
+Info:   - Tempo
+Info:   - TimeSignature
+Info:   - TransportState
+[Succeeded]
+
+-------------------------------------------------------------
+TestSuite : Single Precision (32 bit) Tests
+-------------------------------------------------------------
+
+[Process Test]
+[Succeeded]
+
+[Process function running in another thread]
+Info:  ===Process function running in another thread ====================================
+[Succeeded]
+
+[Silence Flags]
+Info:  ===Silence Flags ====================================
+[Succeeded]
+
+[Silence Processing]
+Info:  ===Silence Processing ====================================
+[Succeeded]
+
+[Parameters Flush (no Buffer)]
+Info:  ===Parameters Flush (no Buffer) ====================================
+[Succeeded]
+
+[Parameters Flush 2 (only numChannel==0)]
+Info:  ===Parameters Flush 2 (only numChannel==0) ====================================
+[Succeeded]
+
+[Parameters Flush 2 (no Buffer, no parameter change)]
+Info:  ===Parameters Flush 2 (no Buffer, no parameter change) ====================================
+[Succeeded]
+
+[Variable Block Size]
+Info:  ===Variable Block Size ====================================
+[Succeeded]
+
+[Process Format]
+Info:  ===Process Format ====================================
+Info:  ***Tested Sample Rates***
+Info:        22050 Hz - processed successfully!
+Info:        32000 Hz - processed successfully!
+Info:        44100 Hz - processed successfully!
+Info:        48000 Hz - processed successfully!
+Info:        88200 Hz - processed successfully!
+Info:        96000 Hz - processed successfully!
+Info:       192000 Hz - processed successfully!
+Info:       384000 Hz - processed successfully!
+Info:    1234.5678 Hz - processed successfully!
+Info:    12345.678 Hz - processed successfully!
+Info:    123456.78 Hz - processed successfully!
+ERROR: IAudioProcessor::setupProcessing (..) failed for samplerate 1234567.800 Hz! 
+[Succeeded]
+
+[Parameter Bypass persistence]
+Info:  ===Parameter Bypass persistence ====================================
+[Succeeded]
+
+[In: Stereo: 2 Channels, Out: Stereo: 2 Channels]
+Info:  ===In: Stereo: 2 Channels, Out: Stereo: 2 Channels ====================================
+[Succeeded]
+
+[In: Mono: 1 Channels, Out: Mono: 1 Channels]
+Info:  ===In: Mono: 1 Channels, Out: Mono: 1 Channels ====================================
+Info:      Mono Input-SpeakerArrangement is not supported. Plug-in suggests: Stereo.
+Info:      Mono Output-SpeakerArrangement is not supported. Plug-in suggests: Stereo.
+[Succeeded]
+
+[Accuracy: Block, 1 Parameters, Change every100 Samples]
+Info:  ===Accuracy: Block, 1 Parameters, Change every100 Samples ====================================
+[Succeeded]
+
+[Accuracy: Sample, 1 Parameters, Change every100 Samples]
+Info:  ===Accuracy: Sample, 1 Parameters, Change every100 Samples ====================================
+Info:     Not all points have been read via IParameterChanges
+[Succeeded]
+
+-------------------------------------------------------------
+TestSuite : Double Precision (64 bit) Tests
+-------------------------------------------------------------
+
+[Process Test]
+Info:  64bit Audio Processing not supported.
+[Succeeded]
+
+[Process function running in another thread]
+Info:  64bit Audio Processing not supported.
+[Succeeded]
+
+[Silence Flags]
+Info:  64bit Audio Processing not supported.
+[Succeeded]
+
+[Silence Processing]
+Info:  64bit Audio Processing not supported.
+[Succeeded]
+
+[Parameters Flush (no Buffer)]
+Info:  64bit Audio Processing not supported.
+[Succeeded]
+
+[Parameters Flush 2 (only numChannel==0)]
+Info:  64bit Audio Processing not supported.
+[Succeeded]
+
+[Parameters Flush 2 (no Buffer, no parameter change)]
+Info:  64bit Audio Processing not supported.
+[Succeeded]
+
+[Variable Block Size]
+Info:  64bit Audio Processing not supported.
+[Succeeded]
+
+[Process Format]
+Info:  64bit Audio Processing not supported.
+[Succeeded]
+
+[Parameter Bypass persistence]
+Info:  64bit Audio Processing not supported.
+[Succeeded]
+
+[In: Stereo: 2 Channels, Out: Stereo: 2 Channels]
+Info:  ===In: Stereo: 2 Channels, Out: Stereo: 2 Channels ====================================
+Info:  64bit Audio Processing not supported.
+[Succeeded]
+
+[In: Mono: 1 Channels, Out: Mono: 1 Channels]
+Info:  ===In: Mono: 1 Channels, Out: Mono: 1 Channels ====================================
+Info:  64bit Audio Processing not supported.
+[Succeeded]
+
+[Accuracy: Block, 1 Parameters, Change every100 Samples]
+Info:  ===Accuracy: Block, 1 Parameters, Change every100 Samples ====================================
+Info:  64bit Audio Processing not supported.
+[Succeeded]
+
+[Accuracy: Sample, 1 Parameters, Change every100 Samples]
+Info:  ===Accuracy: Sample, 1 Parameters, Change every100 Samples ====================================
+Info:  64bit Audio Processing not supported.
+[Succeeded]
+
+-------------------------------------------------------------
+Result: 47 tests passed, 0 tests failed
+-------------------------------------------------------------

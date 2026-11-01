@@ -1,0 +1,158 @@
+diff --git a/src/detail/vst3/parameter.h b/src/detail/vst3/parameter.h
+index d2d59da..a69ccbb 100644
+--- a/src/detail/vst3/parameter.h
++++ b/src/detail/vst3/parameter.h
+@@ -41,6 +41,16 @@ class Vst3Parameter : public Steinberg::Vst::Parameter
+  public:
+   virtual ~Vst3Parameter();
+   bool setNormalized(Steinberg::Vst::ParamValue v) override;
++  Steinberg::Vst::ParamValue toPlain(Steinberg::Vst::ParamValue v) const override
++  {
++    if (!std::isfinite(v)) return min_value;
++    return asClapValue(std::fmax(0.0, std::fmin(1.0, v)));
++  }
++  Steinberg::Vst::ParamValue toNormalized(Steinberg::Vst::ParamValue v) const override
++  {
++    if (!std::isfinite(v)) return 0.0;
++    return std::fmax(0.0, std::fmin(1.0, asVst3Value(v)));
++  }
+ 
+ #if 0
+   // toString/fromString from VST3 parameter should actually be overloaded, but the wrapper will not call them
+diff --git a/src/detail/vst3/process.cpp b/src/detail/vst3/process.cpp
+index 8942d35..6a8b95a 100644
+--- a/src/detail/vst3/process.cpp
++++ b/src/detail/vst3/process.cpp
+@@ -97,7 +97,7 @@ void ProcessAdapter::setupProcessing(const clap_plugin_t *plugin, const clap_plu
+   _processData.in_events = &_in_events;
+   _processData.out_events = &_out_events;
+ 
+-  _processData.transport = &_transport;
++  _processData.transport = nullptr;
+ 
+   _in_events.ctx = this;
+   _in_events.size = input_events_size;
+@@ -174,6 +174,10 @@ void ProcessAdapter::process(Steinberg::Vst::ProcessData &data)
+   _transport.header = {sizeof(_transport), 0, CLAP_CORE_EVENT_SPACE_ID, CLAP_EVENT_TRANSPORT, 0};
+ 
+   _transport.flags = 0;
++  // A missing ProcessContext must remain missing for CLAP as well. A non-null
++  // zero-flag transport would falsely report stopped playback and freeze a
++  // plugin's fallback/custom tempo clock. Restore the pointer on every call.
++  _processData.transport = _vstdata->processContext ? &_transport : nullptr;
+   if (_vstdata->processContext)
+   {
+     // converting the flags
+@@ -194,9 +198,6 @@ void ProcessAdapter::process(Steinberg::Vst::ProcessData &data)
+         |
+         ((_vstdata->processContext->state & Vst::ProcessContext::kTempoValid) ? CLAP_TRANSPORT_HAS_TEMPO
+                                                                               : 0) |
+-        ((_vstdata->processContext->state & Vst::ProcessContext::kBarPositionValid)
+-             ? CLAP_TRANSPORT_HAS_BEATS_TIMELINE
+-             : 0) |
+         ((_vstdata->processContext->state & Vst::ProcessContext::kTimeSigValid)
+              ? CLAP_TRANSPORT_HAS_TIME_SIGNATURE
+              : 0)
+@@ -225,6 +226,8 @@ void ProcessAdapter::process(Steinberg::Vst::ProcessData &data)
+ 
+     if ((_vstdata->processContext->state & Vst::ProcessContext::kProjectTimeMusicValid))
+     {
++      // barPositionMusic only identifies a bar boundary; it does not make
++      // projectTimeMusic valid. Only the latter supplies the current beat.
+       _transport.flags |= CLAP_TRANSPORT_HAS_BEATS_TIMELINE;
+       _transport.song_pos_beats = doubleToBeatTime(_vstdata->processContext->projectTimeMusic);
+     }
+diff --git a/src/wrapasvst3.cpp b/src/wrapasvst3.cpp
+index 6a00130..f2899b9 100644
+--- a/src/wrapasvst3.cpp
++++ b/src/wrapasvst3.cpp
+@@ -444,6 +444,11 @@ tresult PLUGIN_API ClapAsVst3::setupProcessing(Vst::ProcessSetup &newSetup)
+   // [main-thread] -- must not run while the Linux helper thread is inside this
+   // plug-in's idle. \see _mainThreadLock
+   std::lock_guard<std::recursive_mutex> mainThreadGuard(_mainThreadLock);
++#ifdef SPATIALINK_LIMIT_SAMPLE_RATE
++  // Reject unsupported setup before changing the last valid processing configuration.
++  if (!(newSetup.sampleRate >= 1000.0 && newSetup.sampleRate <= 768000.0))
++    return kInvalidArgument;
++#endif
+   if (newSetup.symbolicSampleSize != Vst::kSample32)
+   {
+     return kResultFalse;
+diff --git a/src/wrapasvst3.h b/src/wrapasvst3.h
+index 0898c97..ce56995 100644
+--- a/src/wrapasvst3.h
++++ b/src/wrapasvst3.h
+@@ -147,6 +147,14 @@ class ClapAsVst3 : public Steinberg::Vst::SingleComponentEffect,
+     , _creationcontext(context)
+     , _os_attached([this] { os::attach(this); }, [this] { os::detach(this); })
+   {
++    // UNI timing context: request the host fields needed to drive CLAP transport.
++    // SingleComponentEffect otherwise reports a zero requirements mask.
++    processContextRequirements.needTempo()
++        .needProjectTimeMusic()
++        .needTimeSignature()
++        .needTransportState()
++        .needBarPositionMusic()
++        .needCycleMusic();
+   }
+ 
+   //---from IComponent-----------------------
+@@ -248,7 +256,7 @@ class ClapAsVst3 : public Steinberg::Vst::SingleComponentEffect,
+   OBJ_METHODS(ClapAsVst3, SingleComponentEffect)
+   DEFINE_INTERFACES
+   // dynamic interfaces
+-  if (::Steinberg::FUnknownPrivate::iidEqual(iid, IMidiMapping::iid))
++  if (::Steinberg::FUnknownPrivate::iidEqual(_iid, IMidiMapping::iid))
+   {
+     // when queried for the IMididMapping interface, check if the CLAP supports MIDI dialect on the MIDI Input busses and only return IMidiMapping then
+     if (_useIMidiMapping)
+@@ -256,35 +264,35 @@ class ClapAsVst3 : public Steinberg::Vst::SingleComponentEffect,
+       DEF_INTERFACE(IMidiMapping)
+     }
+   }
+-  if (::Steinberg::FUnknownPrivate::iidEqual(iid, IContextMenuTarget::iid))
++  if (::Steinberg::FUnknownPrivate::iidEqual(_iid, IContextMenuTarget::iid))
+   {
+     if (_plugin->_ext._contextmenu)
+     {
+       DEF_INTERFACE(IContextMenuTarget);
+     }
+   }
+-  if (::Steinberg::FUnknownPrivate::iidEqual(iid, IPlugInEntryPoint::iid))
++  if (::Steinberg::FUnknownPrivate::iidEqual(_iid, IPlugInEntryPoint::iid))
+   {
+     if (_plugin->_ext._ara)
+     {
+       DEF_INTERFACE(IPlugInEntryPoint)
+     }
+   }
+-  if (::Steinberg::FUnknownPrivate::iidEqual(iid, IPlugInEntryPoint2::iid))
++  if (::Steinberg::FUnknownPrivate::iidEqual(_iid, IPlugInEntryPoint2::iid))
+   {
+     if (_plugin->_ext._ara)
+     {
+       DEF_INTERFACE(IPlugInEntryPoint2)
+     }
+   }
+-  if (::Steinberg::FUnknownPrivate::iidEqual(iid, Presonus::IGainReductionInfo::iid))
++  if (::Steinberg::FUnknownPrivate::iidEqual(_iid, Presonus::IGainReductionInfo::iid))
+   {
+     if (_plugin->_ext._gainreduc)
+     {
+       DEF_INTERFACE(Presonus::IGainReductionInfo);
+     }
+   }
+-  if (::Steinberg::FUnknownPrivate::iidEqual(iid, Steinberg::Vst::ChannelContext::IInfoListener::iid))
++  if (::Steinberg::FUnknownPrivate::iidEqual(_iid, Steinberg::Vst::ChannelContext::IInfoListener::iid))
+   {
+     if (_plugin->_ext._trackinfo)
+     {
+@@ -293,7 +301,7 @@ class ClapAsVst3 : public Steinberg::Vst::SingleComponentEffect,
+   }
+ 
+   // add any other interfaces here:
+-  //if (::Steinberg::FUnknownPrivate::iidEqual(iid, IExampleSomething::iid))
++  //if (::Steinberg::FUnknownPrivate::iidEqual(_iid, IExampleSomething::iid))
+   //{
+   //  DEF_INTERFACE(IExampleSomething)
+   //}

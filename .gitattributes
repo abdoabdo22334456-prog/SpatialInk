@@ -12,3 +12,4 @@
 *.clap binary
 *.wav binary
 *.png binary
+*.vst3 binary
